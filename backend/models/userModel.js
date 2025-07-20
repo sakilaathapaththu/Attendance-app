@@ -1,3 +1,4 @@
+
 const { db } = require("../config/firebaseConfig");
 
 const createUserInFirestore = async (userId, userData) => {
@@ -11,5 +12,5 @@ const getUserByUid = async (uid) => {
 
 module.exports = {
   createUserInFirestore,
-  getUserByUid
+  getUserByUid,
 };

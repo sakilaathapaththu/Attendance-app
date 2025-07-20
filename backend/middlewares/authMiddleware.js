@@ -1,3 +1,4 @@
+
 const { admin } = require("../config/firebaseConfig");
 
 const verifyToken = async (req, res, next) => {
