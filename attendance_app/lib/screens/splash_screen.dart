@@ -27,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-    
+
     _scaleAnimation = Tween<double>(
       begin: 0.5,
       end: 1.0,
@@ -52,10 +52,10 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       // Wait for minimum splash duration for better UX
       await Future.delayed(const Duration(seconds: 2));
-      
+
       if (mounted) {
         User? user = FirebaseAuth.instance.currentUser;
-        
+
         if (user != null) {
           // User is logged in, load their data
           await _loadUserData();
@@ -95,8 +95,9 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       // Load user data and attendance status in parallel
       String userName = await _firebaseService.loadUserData();
-      Map<String, dynamic> attendanceResult = await _firebaseService.checkTodayAttendance();
-      
+      Map<String, dynamic> attendanceResult =
+          await _firebaseService.checkTodayAttendance();
+
       if (mounted) {
         // Navigate to home screen with preloaded data
         Navigator.of(context).pushReplacement(
@@ -175,15 +176,19 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.access_time_rounded,
-                          size: 60,
-                          color: AppColors.primaryColor,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child: Image.asset(
+                            'assets/logo.jpg',
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 30),
                       Text(
-                        'Attendance Pro',
+                        'VectraField',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
