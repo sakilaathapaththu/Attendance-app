@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import {
   Typography,
@@ -49,12 +48,13 @@ function formatTimeRange(start, end) {
   return `${durationHours} hrs`;
 }
 export default function AttendanceRecords() {
- const [allRecords, setAllRecords] = useState([]);
+  const [allRecords, setAllRecords] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [openMapDialog, setOpenMapDialog] = useState(false);
+  const [selectedMap, setSelectedMap] = useState(null);
 
   useEffect(() => {
     axios
@@ -78,17 +78,21 @@ export default function AttendanceRecords() {
         grouped[uid].push(entry);
       });
 
-      results = Object.values(grouped).map((records) =>
-        records.sort(
-          (a, b) => (b.startTime?._seconds || 0) - (a.startTime?._seconds || 0)
-        )[0]
+      results = Object.values(grouped).map(
+        (records) =>
+          records.sort(
+            (a, b) =>
+              (b.startTime?._seconds || 0) - (a.startTime?._seconds || 0)
+          )[0]
       );
     }
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       results = results.filter((entry) => {
-        const fullName = `${entry.user?.firstName || ""} ${entry.user?.lastName || ""}`.toLowerCase();
+        const fullName = `${entry.user?.firstName || ""} ${
+          entry.user?.lastName || ""
+        }`.toLowerCase();
         return (
           entry.user?.employeeId?.toLowerCase().includes(q) ||
           fullName.includes(q) ||
@@ -100,12 +104,22 @@ export default function AttendanceRecords() {
     setFiltered(results);
   }, [selectedDate, searchQuery, allRecords]);
 
-  
+  const handleOpenMap = (location, type) => {
+    if (location?.latitude && location?.longitude) {
+      setSelectedMap({ ...location, type });
+      setOpenMapDialog(true);
+    }
+  };
 
+  const handleCloseMap = () => {
+    setOpenMapDialog(false);
+    setSelectedMap(null);
+  };
   return (
     <AdminLayout>
       <Typography variant="h5" gutterBottom>
-        Attendance Records {selectedDate ? `(on ${selectedDate})` : "(Latest per User)"}
+        Attendance Records{" "}
+        {selectedDate ? `(on ${selectedDate})` : "(Latest per User)"}
       </Typography>
 
       <Box display="flex" justifyContent="space-between" gap={2} mb={2}>
@@ -132,10 +146,7 @@ export default function AttendanceRecords() {
           }}
           sx={{ flexGrow: 1 }}
         />
-        
       </Box>
-
-      
 
       {/* Attendance Table */}
       {loading ? (
@@ -171,20 +182,25 @@ export default function AttendanceRecords() {
                   <TableCell>{entry.date || "-"}</TableCell>
                   <TableCell>
                     {entry.startTime
-                      ? new Date(entry.startTime._seconds * 1000).toLocaleTimeString()
+                      ? new Date(
+                          entry.startTime._seconds * 1000
+                        ).toLocaleTimeString()
                       : "-"}
                   </TableCell>
                   <TableCell>
                     {entry.endTime
-                      ? new Date(entry.endTime._seconds * 1000).toLocaleTimeString()
+                      ? new Date(
+                          entry.endTime._seconds * 1000
+                        ).toLocaleTimeString()
                       : "-"}
                   </TableCell>
                   <TableCell>
                     {formatTimeRange(entry.startTime, entry.endTime)}
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     {entry.startLocation?.latitude &&
                     entry.startLocation?.longitude ? (
+                      
                       <MapContainer
                         center={[
                           entry.startLocation.latitude,
@@ -192,11 +208,9 @@ export default function AttendanceRecords() {
                         ]}
                         zoom={13}
                         style={{ height: "100px", width: "100%" }}
+                        attributionControl={false} // ✅ hides Leaflet attribution
                       >
-                        <TileLayer
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          attribution='&copy; OpenStreetMap contributors'
-                        />
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                         <Marker
                           position={[
                             entry.startLocation.latitude,
@@ -209,8 +223,46 @@ export default function AttendanceRecords() {
                     ) : (
                       "-"
                     )}
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
+                    {entry.startLocation?.latitude &&
+                    entry.startLocation?.longitude ? (
+                      <div
+                        onClick={() =>
+                          handleOpenMap(entry.startLocation, "Start")
+                        }
+                        style={{ cursor: "pointer" }}
+                      >
+                        <MapContainer
+                          center={[
+                            entry.startLocation.latitude,
+                            entry.startLocation.longitude,
+                          ]}
+                          zoom={13}
+                          style={{ height: "100px", width: "100%" }}
+                          attributionControl={false}
+                          dragging={false}
+                          zoomControl={false}
+                          doubleClickZoom={false}
+                          scrollWheelZoom={false}
+                        >
+                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                          <Marker
+                            position={[
+                              entry.startLocation.latitude,
+                              entry.startLocation.longitude,
+                            ]}
+                          >
+                            <Popup>Start Location</Popup>
+                          </Marker>
+                        </MapContainer>
+                      </div>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+
+                  {/* <TableCell>
                     {entry.endLocation?.latitude &&
                     entry.endLocation?.longitude ? (
                       <MapContainer
@@ -220,11 +272,9 @@ export default function AttendanceRecords() {
                         ]}
                         zoom={13}
                         style={{ height: "100px", width: "100%" }}
+                        attributionControl={false} // ✅ hide this too if needed
                       >
-                        <TileLayer
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          attribution='&copy; OpenStreetMap contributors'
-                        />
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                         <Marker
                           position={[
                             entry.endLocation.latitude,
@@ -237,6 +287,41 @@ export default function AttendanceRecords() {
                     ) : (
                       "-"
                     )}
+                  </TableCell> */}
+                  <TableCell>
+                    {entry.endLocation?.latitude &&
+                    entry.endLocation?.longitude ? (
+                      <div
+                        onClick={() => handleOpenMap(entry.endLocation, "End")}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <MapContainer
+                          center={[
+                            entry.endLocation.latitude,
+                            entry.endLocation.longitude,
+                          ]}
+                          zoom={13}
+                          style={{ height: "100px", width: "100%" }}
+                          attributionControl={false}
+                          dragging={false}
+                          zoomControl={false}
+                          doubleClickZoom={false}
+                          scrollWheelZoom={false}
+                        >
+                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                          <Marker
+                            position={[
+                              entry.endLocation.latitude,
+                              entry.endLocation.longitude,
+                            ]}
+                          >
+                            <Popup>End Location</Popup>
+                          </Marker>
+                        </MapContainer>
+                      </div>
+                    ) : (
+                      "-"
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -244,6 +329,33 @@ export default function AttendanceRecords() {
           </Table>
         </TableContainer>
       )}
+      <Dialog
+        open={openMapDialog}
+        onClose={handleCloseMap}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>{selectedMap?.type} Location Map</DialogTitle>
+        <DialogContent>
+          {selectedMap && (
+            <MapContainer
+              center={[selectedMap.latitude, selectedMap.longitude]}
+              zoom={16}
+              style={{ height: "400px", width: "100%" }}
+              attributionControl={false} // ✅ removes the Leaflet watermark
+            >
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+              <Marker position={[selectedMap.latitude, selectedMap.longitude]}>
+                <Popup>{selectedMap.type} Location</Popup>
+              </Marker>
+            </MapContainer>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMap}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </AdminLayout>
   );
-};
+}
